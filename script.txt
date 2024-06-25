@@ -1,0 +1,66 @@
+import sys
+
+class CronParser:
+    def __init__(self, cron_input):
+        self.cron_input = cron_input
+
+    def scan_cron_field(self, field, min_val, max_val):
+        if field == '*':
+            return list(range(min_val, max_val + 1))
+
+        result = []
+        parts = field.split(',')
+
+        for part in parts:
+            if '/' in part:
+                range_part, step = part.split('/')
+                step = int(step)
+                if range_part == '*':
+                    result.extend(range(min_val, max_val + 1, step))
+                else:
+                    start, end = map(int, range_part.split('-'))
+                    result.extend(range(start, end + 1, step))
+            elif '-' in part:
+                start, end = map(int, part.split('-'))
+                result.extend(range(start, end + 1))
+            else:
+                result.append(int(part))
+
+        return sorted(set(result))
+
+    def parse(self):
+        fields = self.cron_input.split()
+        self.minute = self.scan_cron_field(fields[0], 0, 59)
+        self.hour = self.scan_cron_field(fields[1], 0, 23)
+        self.day_of_month = self.scan_cron_field(fields[2], 1, 31)
+        self.month = self.scan_cron_field(fields[3], 1, 12)
+        self.day_of_week = self.scan_cron_field(fields[4], 0, 6)
+        self.command = ' '.join(fields[5:])
+
+        return {
+            'minute': self.minute,
+            'hour': self.hour,
+            'day_of_month': self.day_of_month,
+            'month': self.month,
+            'day_of_week': self.day_of_week,
+            'command': self.command
+        }
+
+def main():
+    if len(sys.argv) != 2:
+        print("Usage: your-program \"<cron_input>\"")
+        sys.exit(1)
+
+    cron_input = sys.argv[1]
+    parser = CronParser(cron_input)
+    cron_details = parser.parse()
+
+    for field, values in cron_details.items():
+        if isinstance(values, list):
+            values_str = ' '.join(map(str, values))
+        else:
+            values_str = values
+        print(f"{field.ljust(15)} {values_str}")
+
+if __name__ == "__main__":
+    main()
